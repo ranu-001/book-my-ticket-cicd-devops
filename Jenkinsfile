@@ -15,13 +15,11 @@ pipeline {
     }
 
     environment {
-        APP_NAME = "voting-app"
-        DOCKER_IMAGE = "jamadar21/online-voting-system"
+        APP_NAME = "book-my-ticket"
+        DOCKER_IMAGE = "ranjitavaddebail/book-my-ticket"
     }
 
-
     stages {
-
 
         stage('Checkout Code') {
 
@@ -31,12 +29,9 @@ pipeline {
 
             steps {
                 echo "Pulling latest code from GitHub..."
-
-                git branch: 'main',
-                url: 'https://github.com/ranu-001/book-my-ticket-cicd-devops.git'
+                checkout scm
             }
         }
-
 
         stage('Build JAR') {
 
@@ -45,13 +40,10 @@ pipeline {
             }
 
             steps {
-
-                echo "Building Spring Boot Application..."
-
+                echo "Building Book My Ticket Application..."
                 sh 'mvn clean package -DskipTests'
             }
         }
-
 
         stage('Docker Build') {
 
@@ -60,15 +52,12 @@ pipeline {
             }
 
             steps {
-
                 echo "Building Docker Image..."
-
                 sh '''
                 docker build -t $DOCKER_IMAGE:latest .
                 '''
             }
         }
-
 
         stage('Docker Login & Push') {
 
@@ -78,64 +67,70 @@ pipeline {
 
             steps {
 
-                echo "Pushing Image to Docker Hub..."
+                echo "Pushing Docker Image to Docker Hub..."
 
                 withCredentials([
                     usernamePassword(
-                    credentialsId: 'docker-credentials',
-                    usernameVariable: 'DOCKER_USERNAME',
-                    passwordVariable: 'DOCKER_PASSWORD'
+                        credentialsId: 'docker-credentials',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
 
                     sh '''
-                    docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+                    echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
                     docker push $DOCKER_IMAGE:latest
                     '''
                 }
             }
         }
 
-
         stage('Deploy Application') {
-    when {
-        expression { params.ACTION == 'DEPLOY' }
-    }
-    steps {
-        sh '''
-        docker compose down
-        docker compose up --build -d
-        '''
-    }
-}
 
-stage('Remove Application') {
-    when {
-        expression { params.ACTION == 'REMOVE' }
-    }
-    steps {
-        sh '''
-        docker compose down
-        docker image prune -af
-        '''
-    }
-}
+            when {
+                expression { params.ACTION == 'DEPLOY' }
+            }
 
-    }
+            steps {
+                echo "Deploying Book My Ticket using Docker Compose..."
 
+                sh '''
+                docker compose down || true
+                docker compose up --build -d
+                '''
+            }
+        }
+
+        stage('Remove Application') {
+
+            when {
+                expression { params.ACTION == 'REMOVE' }
+            }
+
+            steps {
+
+                echo "Stopping and Removing Application..."
+
+                sh '''
+                docker compose down
+                docker image prune -af
+                '''
+            }
+        }
+    }
 
     post {
 
         success {
-            echo "Pipeline executed successfully..."
+            echo "Book My Ticket CI/CD Pipeline executed successfully."
         }
 
         failure {
-            echo "Pipeline execution failed..."
+            echo "Book My Ticket CI/CD Pipeline failed."
         }
 
         always {
-            echo "Pipeline completed..."
+            echo "Pipeline execution completed."
         }
     }
 }
