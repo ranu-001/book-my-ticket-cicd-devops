@@ -1,11 +1,12 @@
 pipeline {
+
     agent any
 
     parameters {
         choice(
             name: 'ACTION',
             choices: ['DEPLOY', 'REMOVE'],
-            description: 'Choose whether to deploy or remove containers'
+            description: 'Choose whether to deploy or remove application'
         )
     }
 
@@ -14,63 +15,127 @@ pipeline {
     }
 
     environment {
-        APP_NAME = "book-my-ticket"
+        APP_NAME = "voting-app"
+        DOCKER_IMAGE = "jamadar21/online-voting-system"
     }
+
 
     stages {
 
-        stage('Checkout Source Code') {
-            steps {
-                echo "Fetching latest source code from GitHub..."
-                checkout scm
-            }
-        }
 
-        stage('Build JAR') {
+        stage('Checkout Code') {
+
             when {
                 expression { params.ACTION == 'DEPLOY' }
             }
+
             steps {
-                echo "Building Book My Ticket Application..."
+                echo "Pulling latest code from GitHub..."
+
+                git branch: 'main',
+                url: 'https://github.com/ranu-001/book-my-ticket-cicd-devops.git'
+            }
+        }
+
+
+        stage('Build JAR') {
+
+            when {
+                expression { params.ACTION == 'DEPLOY' }
+            }
+
+            steps {
+
+                echo "Building Spring Boot Application..."
+
                 sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Deploy Application') {
+
+        stage('Docker Build') {
+
             when {
                 expression { params.ACTION == 'DEPLOY' }
             }
+
             steps {
-                echo "Building Docker Image and Starting Containers..."
-                sh 'docker compose down || true'
-                sh 'docker compose up --build -d'
+
+                echo "Building Docker Image..."
+
+                sh '''
+                docker build -t $DOCKER_IMAGE:latest .
+                '''
             }
         }
 
-        stage('Remove Application') {
+
+        stage('Docker Login & Push') {
+
             when {
-                expression { params.ACTION == 'REMOVE' }
+                expression { params.ACTION == 'DEPLOY' }
             }
+
             steps {
-                echo "Stopping and Removing Containers..."
-                sh 'docker compose down'
-                sh 'docker image prune -af'
+
+                echo "Pushing Image to Docker Hub..."
+
+                withCredentials([
+                    usernamePassword(
+                    credentialsId: 'docker-credentials',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+
+                    sh '''
+                    docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+                    docker push $DOCKER_IMAGE:latest
+                    '''
+                }
             }
         }
+
+
+        stage('Deploy Application') {
+    when {
+        expression { params.ACTION == 'DEPLOY' }
     }
+    steps {
+        sh '''
+        docker compose down
+        docker compose up --build -d
+        '''
+    }
+}
+
+stage('Remove Application') {
+    when {
+        expression { params.ACTION == 'REMOVE' }
+    }
+    steps {
+        sh '''
+        docker compose down
+        docker image prune -af
+        '''
+    }
+}
+
+    }
+
 
     post {
 
         success {
-            echo "Book My Ticket deployed successfully."
+            echo "Pipeline executed successfully..."
         }
 
         failure {
-            echo "Pipeline execution failed."
+            echo "Pipeline execution failed..."
         }
 
         always {
-            echo "Pipeline execution completed."
+            echo "Pipeline completed..."
         }
     }
 }
