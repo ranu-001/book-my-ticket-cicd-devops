@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 pipeline {
     agent any
 
@@ -74,50 +73,4 @@ pipeline {
             echo "Pipeline execution completed."
         }
     }
-=======
-pipeline {
-    agent any
-
-    tools {
-        maven 'maven'
-    }
-
-    stages {
-        stage('build stage') {
-            steps {
-                sh 'mvn clean package'
-            }
-            post {
-                success {
-                    echo "build success"
-                }
-                failure {
-                    echo "build failure"
-                }
-            }
-        }
-        stage('build test') {
-            steps {
-                sh 'mvn test'
-            }
-            post {
-                success {
-                    echo "test success"
-                }
-                failure {
-                    echo "test failure"
-                }
-            }
-        }
-       
-    }
-    post {
-        success {
-            echo "pipeline success"
-        }
-        failure {
-            echo "pipeline failure"
-        }
-    }
->>>>>>> a7162fe33fc7e34b28e054bc17a3324473ea0e05
 }
