@@ -7,7 +7,7 @@ spring:
     name: book-my-ticket
 
   datasource:
-    url: jdbc:mysql://mysql:3306/book-my-ticket?createDatabaseIfNotExist=true
+    url: jdbc:mysql://mysql:3306/bookmyticket?createDatabaseIfNotExist=true
     username: root
     password: 1234
 
