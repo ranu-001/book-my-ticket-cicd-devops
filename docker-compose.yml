@@ -14,13 +14,11 @@ services:
     ports:
       - "3306:3306"
 
-
-  healthcheck:
-    test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p1234"]
-    interval: 10s
-    timeout: 5s
-    retries: 10
-
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7
@@ -39,16 +37,15 @@ services:
       - "8085:8085"
 
     depends_on:
-  mysql:
-    condition: service_healthy
-  redis:
-    condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/bookmyticket?createDatabaseIfNotExist=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
       SPRING_REDIS_URL: redis://redis:6379
-
       APP_PASSWORD: ${APP_PASSWORD}
       CLOUDINARY_URL: ${CLOUDINARY_URL}
